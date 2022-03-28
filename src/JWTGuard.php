@@ -3,79 +3,102 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth;
+namespace PHPOpenSourceSaver\JWTAuth;
 
 use BadMethodCallException;
+use Illuminate\Auth\Events\Attempting;
+use Illuminate\Auth\Events\Authenticated;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\GuardHelpers;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Traits\Macroable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Exceptions\UserNotDefinedException;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\UserNotDefinedException;
 
 class JWTGuard implements Guard
 {
-    use GuardHelpers, Macroable {
+    use GuardHelpers {
+        setUser as guardHelperSetUser;
+    }
+    use Macroable {
         __call as macroCall;
     }
 
     /**
      * The user we last attempted to retrieve.
      *
-     * @var \Illuminate\Contracts\Auth\Authenticatable
+     * @var Authenticatable
      */
     protected $lastAttempted;
 
     /**
      * The JWT instance.
      *
-     * @var \Tymon\JWTAuth\JWT
+     * @var JWT
      */
     protected $jwt;
 
     /**
      * The request instance.
      *
-     * @var \Illuminate\Http\Request
+     * @var Request
      */
     protected $request;
 
     /**
-     * Instantiate the class.
+     * The event dispatcher instance.
      *
-     * @param  \Tymon\JWTAuth\JWT  $jwt
-     * @param  \Illuminate\Contracts\Auth\UserProvider  $provider
-     * @param  \Illuminate\Http\Request  $request
+     * @var Dispatcher
+     */
+    protected $events;
+
+    /**
+     * The name of the Guard.
+     *
+     * @var string
+     */
+    protected $name = 'tymon.jwt';
+
+    /**
+     * Instantiate the class.
      *
      * @return void
      */
-    public function __construct(JWT $jwt, UserProvider $provider, Request $request)
+    public function __construct(JWT $jwt, UserProvider $provider, Request $request, Dispatcher $eventDispatcher)
     {
         $this->jwt = $jwt;
         $this->provider = $provider;
         $this->request = $request;
+        $this->events = $eventDispatcher;
     }
 
     /**
      * Get the currently authenticated user.
      *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
+     * @return Authenticatable|null
      */
     public function user()
     {
-        if ($this->user !== null) {
+        if (null !== $this->user) {
             return $this->user;
         }
 
-        if ($this->jwt->setRequest($this->request)->getToken() &&
+        if (
+            $this->jwt->setRequest($this->request)->getToken() &&
             ($payload = $this->jwt->check(true)) &&
             $this->validateSubject()
         ) {
@@ -86,14 +109,14 @@ class JWTGuard implements Guard
     /**
      * Get the currently authenticated user or throws an exception.
      *
-     * @throws \Tymon\JWTAuth\Exceptions\UserNotDefinedException
+     * @return Authenticatable
      *
-     * @return \Illuminate\Contracts\Auth\Authenticatable
+     * @throws UserNotDefinedException
      */
     public function userOrFail()
     {
-        if (! $user = $this->user()) {
-            throw new UserNotDefinedException;
+        if (!$user = $this->user()) {
+            throw new UserNotDefinedException();
         }
 
         return $user;
@@ -101,8 +124,6 @@ class JWTGuard implements Guard
 
     /**
      * Validate a user's credentials.
-     *
-     * @param  array  $credentials
      *
      * @return bool
      */
@@ -114,8 +135,7 @@ class JWTGuard implements Guard
     /**
      * Attempt to authenticate the user using the given credentials and return the token.
      *
-     * @param  array  $credentials
-     * @param  bool  $login
+     * @param bool $login
      *
      * @return bool|string
      */
@@ -123,17 +143,19 @@ class JWTGuard implements Guard
     {
         $this->lastAttempted = $user = $this->provider->retrieveByCredentials($credentials);
 
+        $this->fireAttemptEvent($credentials);
+
         if ($this->hasValidCredentials($user, $credentials)) {
             return $login ? $this->login($user) : true;
         }
+
+        $this->fireFailedEvent($user, $credentials);
 
         return false;
     }
 
     /**
      * Create a token for a user.
-     *
-     * @param  \Tymon\JWTAuth\Contracts\JWTSubject  $user
      *
      * @return string
      */
@@ -142,19 +164,23 @@ class JWTGuard implements Guard
         $token = $this->jwt->fromUser($user);
         $this->setToken($token)->setUser($user);
 
+        $this->fireLoginEvent($user);
+
         return $token;
     }
 
     /**
      * Logout the user, thus invalidating the token.
      *
-     * @param  bool  $forceForever
+     * @param bool $forceForever
      *
      * @return void
      */
     public function logout($forceForever = false)
     {
         $this->requireToken()->invalidate($forceForever);
+
+        $this->fireLogoutEvent($this->user);
 
         $this->user = null;
         $this->jwt->unsetToken();
@@ -163,8 +189,8 @@ class JWTGuard implements Guard
     /**
      * Refresh the token.
      *
-     * @param  bool  $forceForever
-     * @param  bool  $resetClaims
+     * @param bool $forceForever
+     * @param bool $resetClaims
      *
      * @return string
      */
@@ -176,9 +202,9 @@ class JWTGuard implements Guard
     /**
      * Invalidate the token.
      *
-     * @param  bool  $forceForever
+     * @param bool $forceForever
      *
-     * @return \Tymon\JWTAuth\JWT
+     * @return JWT
      */
     public function invalidate($forceForever = false)
     {
@@ -188,7 +214,7 @@ class JWTGuard implements Guard
     /**
      * Create a new token by User id.
      *
-     * @param  mixed  $id
+     * @param mixed $id
      *
      * @return string|null
      */
@@ -201,8 +227,6 @@ class JWTGuard implements Guard
 
     /**
      * Log a user into the application using their credentials.
-     *
-     * @param  array  $credentials
      *
      * @return bool
      */
@@ -220,7 +244,7 @@ class JWTGuard implements Guard
     /**
      * Log the given User into the application.
      *
-     * @param  mixed  $id
+     * @param mixed $id
      *
      * @return bool
      */
@@ -238,7 +262,7 @@ class JWTGuard implements Guard
     /**
      * Alias for onceUsingId.
      *
-     * @param  mixed  $id
+     * @param mixed $id
      *
      * @return bool
      */
@@ -249,8 +273,6 @@ class JWTGuard implements Guard
 
     /**
      * Add any custom claims.
-     *
-     * @param  array  $claims
      *
      * @return $this
      */
@@ -264,7 +286,7 @@ class JWTGuard implements Guard
     /**
      * Get the raw Payload instance.
      *
-     * @return \Tymon\JWTAuth\Payload
+     * @return Payload
      */
     public function getPayload()
     {
@@ -274,7 +296,7 @@ class JWTGuard implements Guard
     /**
      * Alias for getPayload().
      *
-     * @return \Tymon\JWTAuth\Payload
+     * @return Payload
      */
     public function payload()
     {
@@ -284,7 +306,7 @@ class JWTGuard implements Guard
     /**
      * Set the token.
      *
-     * @param  \Tymon\JWTAuth\Token|string  $token
+     * @param Token|string $token
      *
      * @return $this
      */
@@ -298,7 +320,7 @@ class JWTGuard implements Guard
     /**
      * Set the token ttl.
      *
-     * @param  int  $ttl
+     * @param int|null $ttl
      *
      * @return $this
      */
@@ -312,7 +334,7 @@ class JWTGuard implements Guard
     /**
      * Get the user provider used by the guard.
      *
-     * @return \Illuminate\Contracts\Auth\UserProvider
+     * @return UserProvider
      */
     public function getProvider()
     {
@@ -321,8 +343,6 @@ class JWTGuard implements Guard
 
     /**
      * Set the user provider used by the guard.
-     *
-     * @param  \Illuminate\Contracts\Auth\UserProvider  $provider
      *
      * @return $this
      */
@@ -336,7 +356,7 @@ class JWTGuard implements Guard
     /**
      * Return the currently cached user.
      *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
+     * @return Authenticatable|null
      */
     public function getUser()
     {
@@ -344,9 +364,23 @@ class JWTGuard implements Guard
     }
 
     /**
+     * Set the current user.
+     *
+     * @return $this
+     */
+    public function setUser(Authenticatable $user)
+    {
+        $result = $this->guardHelperSetUser($user);
+
+        $this->fireAuthenticatedEvent($user);
+
+        return $result;
+    }
+
+    /**
      * Get the current request instance.
      *
-     * @return \Illuminate\Http\Request
+     * @return Request
      */
     public function getRequest()
     {
@@ -355,8 +389,6 @@ class JWTGuard implements Guard
 
     /**
      * Set the current request instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
      *
      * @return $this
      */
@@ -370,7 +402,7 @@ class JWTGuard implements Guard
     /**
      * Get the last user we attempted to authenticate.
      *
-     * @return \Illuminate\Contracts\Auth\Authenticatable
+     * @return Authenticatable
      */
     public function getLastAttempted()
     {
@@ -380,26 +412,32 @@ class JWTGuard implements Guard
     /**
      * Determine if the user matches the credentials.
      *
-     * @param  mixed  $user
-     * @param  array  $credentials
+     * @param mixed $user
+     * @param array $credentials
      *
      * @return bool
      */
     protected function hasValidCredentials($user, $credentials)
     {
-        return $user !== null && $this->provider->validateCredentials($user, $credentials);
+        $validated = null !== $user && $this->provider->validateCredentials($user, $credentials);
+
+        if ($validated) {
+            $this->fireValidatedEvent($user);
+        }
+
+        return $validated;
     }
 
     /**
      * Ensure the JWTSubject matches what is in the token.
      *
-     * @return  bool
+     * @return bool
      */
     protected function validateSubject()
     {
         // If the provider doesn't have the necessary method
         // to get the underlying model name then allow.
-        if (! method_exists($this->provider, 'getModel')) {
+        if (!method_exists($this->provider, 'getModel')) {
             return true;
         }
 
@@ -409,13 +447,13 @@ class JWTGuard implements Guard
     /**
      * Ensure that a token is available in the request.
      *
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
+     * @return JWT
      *
-     * @return \Tymon\JWTAuth\JWT
+     * @throws \PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException
      */
     protected function requireToken()
     {
-        if (! $this->jwt->setRequest($this->getRequest())->getToken()) {
+        if (!$this->jwt->setRequest($this->getRequest())->getToken()) {
             throw new JWTException('Token could not be parsed from the request.');
         }
 
@@ -423,14 +461,111 @@ class JWTGuard implements Guard
     }
 
     /**
+     * Fire the attempt event.
+     *
+     * @return void
+     */
+    protected function fireAttemptEvent(array $credentials)
+    {
+        $this->events->dispatch(new Attempting(
+            $this->name,
+            $credentials,
+            false
+        ));
+    }
+
+    /**
+     * Fires the validated event.
+     *
+     * @param Authenticatable $user
+     *
+     * @return void
+     */
+    protected function fireValidatedEvent($user)
+    {
+        if (class_exists('Illuminate\Auth\Events\Validated')) {
+            $this->events->dispatch(
+                new \Illuminate\Auth\Events\Validated(
+                    $this->name,
+                    $user
+                )
+            );
+        }
+    }
+
+    /**
+     * Fire the failed authentication attempt event.
+     *
+     * @param Authenticatable|null $user
+     *
+     * @return void
+     */
+    protected function fireFailedEvent($user, array $credentials)
+    {
+        $this->events->dispatch(new Failed(
+            $this->name,
+            $user,
+            $credentials
+        ));
+    }
+
+    /**
+     * Fire the authenticated event.
+     *
+     * @param \Illuminate\Contracts\Auth\Authenticatable $user
+     *
+     * @return void
+     */
+    protected function fireAuthenticatedEvent($user)
+    {
+        $this->events->dispatch(new Authenticated(
+            $this->name,
+            $user
+        ));
+    }
+
+    /**
+     * Fire the login event.
+     *
+     * @param \Illuminate\Contracts\Auth\Authenticatable $user
+     * @param bool                                       $remember
+     *
+     * @return void
+     */
+    protected function fireLoginEvent($user, $remember = false)
+    {
+        $this->events->dispatch(new Login(
+            $this->name,
+            $user,
+            $remember
+        ));
+    }
+
+    /**
+     * Fire the logout event.
+     *
+     * @param \Illuminate\Contracts\Auth\Authenticatable $user
+     * @param bool                                       $remember
+     *
+     * @return void
+     */
+    protected function fireLogoutEvent($user, $remember = false)
+    {
+        $this->events->dispatch(new Logout(
+            $this->name,
+            $user
+        ));
+    }
+
+    /**
      * Magically call the JWT instance.
      *
-     * @param  string  $method
-     * @param  array  $parameters
-     *
-     * @throws \BadMethodCallException
+     * @param string $method
+     * @param array  $parameters
      *
      * @return mixed
+     *
+     * @throws BadMethodCallException
      */
     public function __call($method, $parameters)
     {

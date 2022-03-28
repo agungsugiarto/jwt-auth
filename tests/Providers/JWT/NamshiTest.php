@@ -3,32 +3,34 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Providers\JWT;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Providers\JWT;
 
 use Exception;
 use InvalidArgumentException;
 use Mockery;
+use Mockery\MockInterface;
 use Namshi\JOSE\JWS;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Exceptions\TokenInvalidException;
-use Tymon\JWTAuth\Providers\JWT\Namshi;
-use Tymon\JWTAuth\Test\AbstractTestCase;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
+use PHPOpenSourceSaver\JWTAuth\Providers\JWT\Namshi;
+use PHPOpenSourceSaver\JWTAuth\Test\AbstractTestCase;
 
 class NamshiTest extends AbstractTestCase
 {
     /**
-     * @var \Mockery\MockInterface
+     * @var MockInterface
      */
     protected $jws;
 
     /**
-     * @var \Tymon\JWTAuth\Providers\JWT\Namshi
+     * @var Namshi
      */
     protected $provider;
 
@@ -40,7 +42,7 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_the_token_when_passing_a_valid_payload_to_encode()
+    public function itShouldReturnTheTokenWhenPassingAValidPayloadToEncode()
     {
         $payload = ['sub' => 1, 'exp' => $this->testNowTimestamp + 3600, 'iat' => $this->testNowTimestamp, 'iss' => '/foo'];
 
@@ -53,8 +55,13 @@ class NamshiTest extends AbstractTestCase
         $this->assertSame('foo.bar.baz', $token);
     }
 
+    public function getProvider($secret, $algo, array $keys = [])
+    {
+        return new Namshi($this->jws, $secret, $algo, $keys);
+    }
+
     /** @test */
-    public function it_should_throw_an_invalid_exception_when_the_payload_could_not_be_encoded()
+    public function itShouldThrowAnInvalidExceptionWhenThePayloadCouldNotBeEncoded()
     {
         $this->expectException(JWTException::class);
         $this->expectExceptionMessage('Could not create token:');
@@ -62,13 +69,13 @@ class NamshiTest extends AbstractTestCase
         $payload = ['sub' => 1, 'exp' => $this->testNowTimestamp, 'iat' => $this->testNowTimestamp, 'iss' => '/foo'];
 
         $this->jws->shouldReceive('setPayload')->once()->with($payload)->andReturn(Mockery::self());
-        $this->jws->shouldReceive('sign')->andThrow(new Exception);
+        $this->jws->shouldReceive('sign')->andThrow(new Exception());
 
         $this->getProvider('secret', 'HS256')->encode($payload);
     }
 
     /** @test */
-    public function it_should_return_the_payload_when_passing_a_valid_token_to_decode()
+    public function itShouldReturnThePayloadWhenPassingAValidTokenToDecode()
     {
         $payload = ['sub' => 1, 'exp' => $this->testNowTimestamp + 3600, 'iat' => $this->testNowTimestamp, 'iss' => '/foo'];
 
@@ -80,7 +87,7 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_a_token_invalid_exception_when_the_token_could_not_be_decoded_due_to_a_bad_signature()
+    public function itShouldThrowATokenInvalidExceptionWhenTheTokenCouldNotBeDecodedDueToABadSignature()
     {
         $this->expectException(TokenInvalidException::class);
         $this->expectExceptionMessage('Token Signature could not be verified.');
@@ -93,12 +100,12 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_a_token_invalid_exception_when_the_token_could_not_be_decoded()
+    public function itShouldThrowATokenInvalidExceptionWhenTheTokenCouldNotBeDecoded()
     {
         $this->expectException(TokenInvalidException::class);
         $this->expectExceptionMessage('Could not decode token:');
 
-        $this->jws->shouldReceive('load')->once()->with('foo.bar.baz', false)->andThrow(new InvalidArgumentException);
+        $this->jws->shouldReceive('load')->once()->with('foo.bar.baz', false)->andThrow(new InvalidArgumentException());
         $this->jws->shouldReceive('verify')->never();
         $this->jws->shouldReceive('getPayload')->never();
 
@@ -106,7 +113,7 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_generate_a_token_when_using_an_rsa_algorithm()
+    public function itShouldGenerateATokenWhenUsingAnRsaAlgorithm()
     {
         $provider = $this->getProvider(
             'does_not_matter',
@@ -125,8 +132,18 @@ class NamshiTest extends AbstractTestCase
         $this->assertSame('foo.bar.baz', $token);
     }
 
+    public function getDummyPrivateKey()
+    {
+        return file_get_contents(__DIR__.'/../Keys/id_rsa');
+    }
+
+    public function getDummyPublicKey()
+    {
+        return file_get_contents(__DIR__.'/../Keys/id_rsa.pub');
+    }
+
     /** @test */
-    public function it_should_generate_a_token_when_using_an_ecdsa_algorithm()
+    public function itShouldGenerateATokenWhenUsingAnEcdsaAlgorithm()
     {
         $provider = $this->getProvider(
             'does_not_matter',
@@ -146,7 +163,7 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_decode_a_token_when_using_an_rsa_algorithm()
+    public function itShouldDecodeATokenWhenUsingAnRsaAlgorithm()
     {
         $provider = $this->getProvider(
             'does_not_matter',
@@ -166,7 +183,7 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_a_exception_when_the_algorithm_passed_is_invalid()
+    public function itShouldThrowAExceptionWhenTheAlgorithmPassedIsInvalid()
     {
         $this->expectException(JWTException::class);
         $this->expectExceptionMessage('The given algorithm could not be found');
@@ -178,7 +195,7 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_the_public_key()
+    public function itShouldReturnThePublicKey()
     {
         $provider = $this->getProvider(
             'does_not_matter',
@@ -190,7 +207,7 @@ class NamshiTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_the_keys()
+    public function itShouldReturnTheKeys()
     {
         $provider = $this->getProvider(
             'does_not_matter',
@@ -199,20 +216,5 @@ class NamshiTest extends AbstractTestCase
         );
 
         $this->assertSame($keys, $provider->getKeys());
-    }
-
-    public function getProvider($secret, $algo, array $keys = [])
-    {
-        return new Namshi($this->jws, $secret, $algo, $keys);
-    }
-
-    public function getDummyPrivateKey()
-    {
-        return file_get_contents(__DIR__.'/../Keys/id_rsa');
-    }
-
-    public function getDummyPublicKey()
-    {
-        return file_get_contents(__DIR__.'/../Keys/id_rsa.pub');
     }
 }

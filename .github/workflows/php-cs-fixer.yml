@@ -1,0 +1,46 @@
+name: Coding Standards
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  php-cs-fixer:
+    name: Fix Code Style
+    timeout-minutes: 5
+    runs-on: ubuntu-20.04
+    env:
+      COMPOSER_NO_INTERACTION: 1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.4
+          coverage: none
+
+      - name: Determine composer cache directory
+        id: composer-cache
+        run: echo "::set-output name=directory::$(composer config cache-dir)"
+
+      - name: Cache dependencies installed with composer
+        uses: actions/cache@v2.1.6
+        with:
+          path: ${{ steps.composer-cache.outputs.directory }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+            composer-
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-progress --no-plugins --no-scripts
+
+      - run: composer php-cs-fixer
+        continue-on-error: true
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'style: php-cs-fixer'

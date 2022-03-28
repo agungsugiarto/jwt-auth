@@ -3,26 +3,27 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Claims;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Claims;
 
 use Illuminate\Contracts\Support\Arrayable;
-use Tymon\JWTAuth\Claims\Expiration;
-use Tymon\JWTAuth\Exceptions\InvalidClaimException;
-use Tymon\JWTAuth\Test\AbstractTestCase;
+use PHPOpenSourceSaver\JWTAuth\Claims\Expiration;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\InvalidClaimException;
+use PHPOpenSourceSaver\JWTAuth\Test\AbstractTestCase;
 
 class ClaimTest extends AbstractTestCase
 {
-    /**
-     * @var \Tymon\JWTAuth\Claims\Expiration
-     */
-    protected $claim;
+    protected Expiration $claim;
 
+    /**
+     * @throws InvalidClaimException
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -31,7 +32,7 @@ class ClaimTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_when_passing_an_invalid_value()
+    public function itShouldThrowAnExceptionWhenPassingAnInvalidValue()
     {
         $this->expectException(InvalidClaimException::class);
         $this->expectExceptionMessage('Invalid value provided for claim [exp]');
@@ -40,25 +41,25 @@ class ClaimTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_convert_the_claim_to_an_array()
+    public function itShouldConvertTheClaimToAnArray()
     {
         $this->assertSame(['exp' => $this->testNowTimestamp], $this->claim->toArray());
     }
 
     /** @test */
-    public function it_should_get_the_claim_as_a_string()
+    public function itShouldGetTheClaimAsAString()
     {
         $this->assertJsonStringEqualsJsonString((string) $this->claim, $this->claim->toJson());
     }
 
     /** @test */
-    public function it_should_get_the_object_as_json()
+    public function itShouldGetTheObjectAsJson()
     {
         $this->assertJsonStringEqualsJsonString(json_encode($this->claim), $this->claim->toJson());
     }
 
     /** @test */
-    public function it_should_implement_arrayable()
+    public function itShouldImplementArrayable()
     {
         $this->assertInstanceOf(Arrayable::class, $this->claim);
     }

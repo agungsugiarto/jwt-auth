@@ -3,30 +3,29 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Providers\Auth;
+namespace PHPOpenSourceSaver\JWTAuth\Providers\Auth;
 
 use Illuminate\Contracts\Auth\Guard as GuardContract;
-use Tymon\JWTAuth\Contracts\Providers\Auth;
+use PHPOpenSourceSaver\JWTAuth\Contracts\Providers\Auth;
 
 class Illuminate implements Auth
 {
     /**
      * The authentication guard.
      *
-     * @var \Illuminate\Contracts\Auth\Guard
+     * @var GuardContract
      */
     protected $auth;
 
     /**
      * Constructor.
-     *
-     * @param  \Illuminate\Contracts\Auth\Guard  $auth
      *
      * @return void
      */
@@ -38,8 +37,6 @@ class Illuminate implements Auth
     /**
      * Check a user's credentials.
      *
-     * @param  array  $credentials
-     *
      * @return bool
      */
     public function byCredentials(array $credentials)
@@ -50,7 +47,7 @@ class Illuminate implements Auth
     /**
      * Authenticate a user via the id.
      *
-     * @param  mixed  $id
+     * @param mixed $id
      *
      * @return bool
      */

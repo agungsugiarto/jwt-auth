@@ -3,20 +3,21 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth;
+namespace PHPOpenSourceSaver\JWTAuth;
 
 use BadMethodCallException;
 use Illuminate\Http\Request;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Http\Parser\Parser;
-use Tymon\JWTAuth\Support\CustomClaims;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Http\Parser\Parser;
+use PHPOpenSourceSaver\JWTAuth\Support\CustomClaims;
 
 class JWT
 {
@@ -25,21 +26,21 @@ class JWT
     /**
      * The authentication manager.
      *
-     * @var \Tymon\JWTAuth\Manager
+     * @var Manager
      */
     protected $manager;
 
     /**
      * The HTTP parser.
      *
-     * @var \Tymon\JWTAuth\Http\Parser\Parser
+     * @var Parser
      */
     protected $parser;
 
     /**
      * The token.
      *
-     * @var \Tymon\JWTAuth\Token|null
+     * @var Token|null
      */
     protected $token;
 
@@ -53,9 +54,6 @@ class JWT
     /**
      * JWT constructor.
      *
-     * @param  \Tymon\JWTAuth\Manager  $manager
-     * @param  \Tymon\JWTAuth\Http\Parser\Parser  $parser
-     *
      * @return void
      */
     public function __construct(Manager $manager, Parser $parser)
@@ -66,8 +64,6 @@ class JWT
 
     /**
      * Generate a token for a given subject.
-     *
-     * @param  \Tymon\JWTAuth\Contracts\JWTSubject  $subject
      *
      * @return string
      */
@@ -81,8 +77,6 @@ class JWT
     /**
      * Alias to generate a token for a given user.
      *
-     * @param  \Tymon\JWTAuth\Contracts\JWTSubject  $user
-     *
      * @return string
      */
     public function fromUser(JWTSubject $user)
@@ -93,8 +87,8 @@ class JWT
     /**
      * Refresh an expired token.
      *
-     * @param  bool  $forceForever
-     * @param  bool  $resetClaims
+     * @param bool $forceForever
+     * @param bool $resetClaims
      *
      * @return string
      */
@@ -103,14 +97,14 @@ class JWT
         $this->requireToken();
 
         return $this->manager->customClaims($this->getCustomClaims())
-                             ->refresh($this->token, $forceForever, $resetClaims)
-                             ->get();
+            ->refresh($this->token, $forceForever, $resetClaims)
+            ->get();
     }
 
     /**
      * Invalidate a token (add it to the blacklist).
      *
-     * @param  bool  $forceForever
+     * @param bool $forceForever
      *
      * @return $this
      */
@@ -127,9 +121,9 @@ class JWT
      * Alias to get the payload, and as a result checks that
      * the token is valid i.e. not expired or blacklisted.
      *
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
+     * @return Payload
      *
-     * @return \Tymon\JWTAuth\Payload
+     * @throws JWTException
      */
     public function checkOrFail()
     {
@@ -139,9 +133,9 @@ class JWT
     /**
      * Check that the token is valid.
      *
-     * @param  bool  $getPayload
+     * @param bool $getPayload
      *
-     * @return \Tymon\JWTAuth\Payload|bool
+     * @return Payload|bool
      */
     public function check($getPayload = false)
     {
@@ -157,11 +151,11 @@ class JWT
     /**
      * Get the token.
      *
-     * @return \Tymon\JWTAuth\Token|null
+     * @return Token|null
      */
     public function getToken()
     {
-        if ($this->token === null) {
+        if (null === $this->token) {
             try {
                 $this->parseToken();
             } catch (JWTException $e) {
@@ -175,13 +169,13 @@ class JWT
     /**
      * Parse the token from the request.
      *
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
-     *
      * @return $this
+     *
+     * @throws JWTException
      */
     public function parseToken()
     {
-        if (! $token = $this->parser->parseToken()) {
+        if (!$token = $this->parser->parseToken()) {
             throw new JWTException('The token could not be parsed from the request');
         }
 
@@ -191,7 +185,7 @@ class JWT
     /**
      * Get the raw Payload instance.
      *
-     * @return \Tymon\JWTAuth\Payload
+     * @return Payload
      */
     public function getPayload()
     {
@@ -203,7 +197,7 @@ class JWT
     /**
      * Alias for getPayload().
      *
-     * @return \Tymon\JWTAuth\Payload
+     * @return Payload
      */
     public function payload()
     {
@@ -213,7 +207,7 @@ class JWT
     /**
      * Convenience method to get a claim value.
      *
-     * @param  string  $claim
+     * @param string $claim
      *
      * @return mixed
      */
@@ -225,9 +219,7 @@ class JWT
     /**
      * Create a Payload instance.
      *
-     * @param  \Tymon\JWTAuth\Contracts\JWTSubject  $subject
-     *
-     * @return \Tymon\JWTAuth\Payload
+     * @return Payload
      */
     public function makePayload(JWTSubject $subject)
     {
@@ -236,8 +228,6 @@ class JWT
 
     /**
      * Build the claims array and return it.
-     *
-     * @param  \Tymon\JWTAuth\Contracts\JWTSubject  $subject
      *
      * @return array
      */
@@ -253,8 +243,6 @@ class JWT
     /**
      * Get the claims associated with a given subject.
      *
-     * @param  \Tymon\JWTAuth\Contracts\JWTSubject  $subject
-     *
      * @return array
      */
     protected function getClaimsForSubject(JWTSubject $subject)
@@ -267,7 +255,7 @@ class JWT
     /**
      * Hash the subject model and return it.
      *
-     * @param  string|object  $model
+     * @param string|object $model
      *
      * @return string
      */
@@ -279,7 +267,7 @@ class JWT
     /**
      * Check if the subject model matches the one saved in the token.
      *
-     * @param  string|object  $model
+     * @param string|object $model
      *
      * @return bool
      */
@@ -295,7 +283,7 @@ class JWT
     /**
      * Set the token.
      *
-     * @param  \Tymon\JWTAuth\Token|string  $token
+     * @param Token|string $token
      *
      * @return $this
      */
@@ -321,21 +309,19 @@ class JWT
     /**
      * Ensure that a token is available.
      *
-     * @throws \Tymon\JWTAuth\Exceptions\JWTException
-     *
      * @return void
+     *
+     * @throws JWTException
      */
     protected function requireToken()
     {
-        if (! $this->token) {
+        if (!$this->token) {
             throw new JWTException('A token is required');
         }
     }
 
     /**
      * Set the request instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
      *
      * @return $this
      */
@@ -349,7 +335,7 @@ class JWT
     /**
      * Set whether the subject should be "locked".
      *
-     * @param  bool  $lock
+     * @param bool $lock
      *
      * @return $this
      */
@@ -363,7 +349,7 @@ class JWT
     /**
      * Get the Manager instance.
      *
-     * @return \Tymon\JWTAuth\Manager
+     * @return Manager
      */
     public function manager()
     {
@@ -373,7 +359,7 @@ class JWT
     /**
      * Get the Parser instance.
      *
-     * @return \Tymon\JWTAuth\Http\Parser\Parser
+     * @return Parser
      */
     public function parser()
     {
@@ -383,7 +369,7 @@ class JWT
     /**
      * Get the Payload Factory.
      *
-     * @return \Tymon\JWTAuth\Factory
+     * @return Factory
      */
     public function factory()
     {
@@ -393,7 +379,7 @@ class JWT
     /**
      * Get the Blacklist.
      *
-     * @return \Tymon\JWTAuth\Blacklist
+     * @return Blacklist
      */
     public function blacklist()
     {
@@ -403,12 +389,12 @@ class JWT
     /**
      * Magically call the JWT Manager.
      *
-     * @param  string  $method
-     * @param  array  $parameters
-     *
-     * @throws \BadMethodCallException
+     * @param string $method
+     * @param array  $parameters
      *
      * @return mixed
+     *
+     * @throws BadMethodCallException
      */
     public function __call($method, $parameters)
     {

@@ -3,38 +3,38 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test;
+namespace PHPOpenSourceSaver\JWTAuth\Test;
 
 use BadMethodCallException;
 use Mockery;
-use Tymon\JWTAuth\Claims\Audience;
-use Tymon\JWTAuth\Claims\Claim;
-use Tymon\JWTAuth\Claims\Collection;
-use Tymon\JWTAuth\Claims\Expiration;
-use Tymon\JWTAuth\Claims\IssuedAt;
-use Tymon\JWTAuth\Claims\Issuer;
-use Tymon\JWTAuth\Claims\JwtId;
-use Tymon\JWTAuth\Claims\NotBefore;
-use Tymon\JWTAuth\Claims\Subject;
-use Tymon\JWTAuth\Exceptions\PayloadException;
-use Tymon\JWTAuth\Payload;
-use Tymon\JWTAuth\Validators\PayloadValidator;
+use Mockery\LegacyMockInterface;
+use PHPOpenSourceSaver\JWTAuth\Claims\Audience;
+use PHPOpenSourceSaver\JWTAuth\Claims\Claim;
+use PHPOpenSourceSaver\JWTAuth\Claims\Collection;
+use PHPOpenSourceSaver\JWTAuth\Claims\Expiration;
+use PHPOpenSourceSaver\JWTAuth\Claims\IssuedAt;
+use PHPOpenSourceSaver\JWTAuth\Claims\Issuer;
+use PHPOpenSourceSaver\JWTAuth\Claims\JwtId;
+use PHPOpenSourceSaver\JWTAuth\Claims\NotBefore;
+use PHPOpenSourceSaver\JWTAuth\Claims\Subject;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\InvalidClaimException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\PayloadException;
+use PHPOpenSourceSaver\JWTAuth\Payload;
+use PHPOpenSourceSaver\JWTAuth\Validators\PayloadValidator;
 
 class PayloadTest extends AbstractTestCase
 {
-    /**
-     * @var \Mockery\MockInterface|\Tymon\JWTAuth\Validators\PayloadValidator
-     */
-    protected $validator;
+    protected ?LegacyMockInterface $validator = null;
 
     /**
-     * @var \Tymon\JWTAuth\Payload
+     * @var Payload
      */
     protected $payload;
 
@@ -46,9 +46,9 @@ class PayloadTest extends AbstractTestCase
     }
 
     /**
-     * @param  array  $extraClaims
+     * @return Payload
      *
-     * @return \Tymon\JWTAuth\Payload
+     * @throws InvalidClaimException
      */
     private function getTestPayload(array $extraClaims = [])
     {
@@ -74,7 +74,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_when_trying_to_add_to_the_payload()
+    public function itShouldThrowAnExceptionWhenTryingToAddToThePayload()
     {
         $this->expectException(PayloadException::class);
         $this->expectExceptionMessage('The payload is immutable');
@@ -83,7 +83,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_when_trying_to_remove_a_key_from_the_payload()
+    public function itShouldThrowAnExceptionWhenTryingToRemoveAKeyFromThePayload()
     {
         $this->expectException(PayloadException::class);
         $this->expectExceptionMessage('The payload is immutable');
@@ -92,14 +92,14 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_cast_the_payload_to_a_string_as_json()
+    public function itShouldCastThePayloadToAStringAsJson()
     {
         $this->assertSame((string) $this->payload, json_encode($this->payload->get(), JSON_UNESCAPED_SLASHES));
         $this->assertJsonStringEqualsJsonString((string) $this->payload, json_encode($this->payload->get()));
     }
 
     /** @test */
-    public function it_should_allow_array_access_on_the_payload()
+    public function itShouldAllowArrayAccessOnThePayload()
     {
         $this->assertTrue(isset($this->payload['iat']));
         $this->assertSame($this->payload['sub'], 1);
@@ -107,21 +107,19 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_get_properties_of_payload_via_get_method()
+    public function itShouldGetPropertiesOfPayloadViaGetMethod()
     {
         $this->assertIsArray($this->payload->get());
         $this->assertSame($this->payload->get('sub'), 1);
 
         $this->assertSame(
-            $this->payload->get(function () {
-                return 'jti';
-            }),
+            $this->payload->get(fn () => 'jti'),
             'foo'
         );
     }
 
     /** @test */
-    public function it_should_get_multiple_properties_when_passing_an_array_to_the_get_method()
+    public function itShouldGetMultiplePropertiesWhenPassingAnArrayToTheGetMethod()
     {
         $values = $this->payload->get(['sub', 'jti']);
 
@@ -134,14 +132,14 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_determine_whether_the_payload_has_a_claim()
+    public function itShouldDetermineWhetherThePayloadHasAClaim()
     {
         $this->assertTrue($this->payload->has(new Subject(1)));
         $this->assertFalse($this->payload->has(new Audience(1)));
     }
 
     /** @test */
-    public function it_should_magically_get_a_property()
+    public function itShouldMagicallyGetAProperty()
     {
         $sub = $this->payload->getSubject();
         $jti = $this->payload->getJwtId();
@@ -153,7 +151,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_invoke_the_instance_as_a_callable()
+    public function itShouldInvokeTheInstanceAsACallable()
     {
         $payload = $this->payload;
 
@@ -169,7 +167,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_when_magically_getting_a_property_that_does_not_exist()
+    public function itShouldThrowAnExceptionWhenMagicallyGettingAPropertyThatDoesNotExist()
     {
         $this->expectException(BadMethodCallException::class);
         $this->expectExceptionMessage('The claim [Foo] does not exist on the payload');
@@ -178,7 +176,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_get_the_claims()
+    public function itShouldGetTheClaims()
     {
         $claims = $this->payload->getClaims();
 
@@ -190,20 +188,20 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_get_the_object_as_json()
+    public function itShouldGetTheObjectAsJson()
     {
         $this->assertJsonStringEqualsJsonString(json_encode($this->payload), $this->payload->toJson());
     }
 
     /** @test */
-    public function it_should_count_the_claims()
+    public function itShouldCountTheClaims()
     {
         $this->assertSame(6, $this->payload->count());
         $this->assertCount(6, $this->payload);
     }
 
     /** @test */
-    public function it_should_match_values()
+    public function itShouldMatchValues()
     {
         $values = $this->payload->toArray();
         $values['sub'] = (string) $values['sub'];
@@ -212,7 +210,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_match_strict_values()
+    public function itShouldMatchStrictValues()
     {
         $values = $this->payload->toArray();
 
@@ -221,13 +219,13 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_not_match_empty_values()
+    public function itShouldNotMatchEmptyValues()
     {
         $this->assertFalse($this->payload->matches([]));
     }
 
     /** @test */
-    public function it_should_not_match_values()
+    public function itShouldNotMatchValues()
     {
         $values = $this->payload->toArray();
         $values['sub'] = 'dummy_subject';
@@ -236,7 +234,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_not_match_strict_values()
+    public function itShouldNotMatchStrictValues()
     {
         $values = $this->payload->toArray();
         $values['sub'] = (string) $values['sub'];
@@ -246,7 +244,7 @@ class PayloadTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_not_match_a_non_existing_claim()
+    public function itShouldNotMatchANonExistingClaim()
     {
         $values = ['foo' => 'bar'];
 

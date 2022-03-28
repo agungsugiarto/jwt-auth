@@ -3,22 +3,23 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Validators;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Validators;
 
-use Tymon\JWTAuth\Exceptions\TokenInvalidException;
-use Tymon\JWTAuth\Test\AbstractTestCase;
-use Tymon\JWTAuth\Validators\TokenValidator;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
+use PHPOpenSourceSaver\JWTAuth\Test\AbstractTestCase;
+use PHPOpenSourceSaver\JWTAuth\Validators\TokenValidator;
 
 class TokenValidatorTest extends AbstractTestCase
 {
     /**
-     * @var \Tymon\JWTAuth\Validators\TokenValidator
+     * @var TokenValidator
      */
     protected $validator;
 
@@ -26,31 +27,31 @@ class TokenValidatorTest extends AbstractTestCase
     {
         parent::setUp();
 
-        $this->validator = new TokenValidator;
+        $this->validator = new TokenValidator();
     }
 
     /** @test */
-    public function it_should_return_true_when_providing_a_well_formed_token()
+    public function itShouldReturnTrueWhenProvidingAWellFormedToken()
     {
         $this->assertTrue($this->validator->isValid('one.two.three'));
     }
 
     /**
      * @test
-     * @dataProvider \Tymon\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderMalformedTokens
+     * @dataProvider \PHPOpenSourceSaver\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderMalformedTokens
      *
-     * @param  string  $token
+     * @param string $token
      */
-    public function it_should_return_false_when_providing_a_malformed_token($token)
+    public function itShouldReturnFalseWhenProvidingAMalformedToken($token)
     {
         $this->assertFalse($this->validator->isValid($token));
     }
 
     /**
      * @test
-     * @dataProvider \Tymon\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderMalformedTokens
+     * @dataProvider \PHPOpenSourceSaver\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderMalformedTokens
      */
-    public function it_should_throw_an_exception_when_providing_a_malformed_token($token)
+    public function itShouldThrowAnExceptionWhenProvidingAMalformedToken($token)
     {
         $this->expectException(TokenInvalidException::class);
         $this->expectExceptionMessage('Malformed token');
@@ -60,18 +61,18 @@ class TokenValidatorTest extends AbstractTestCase
 
     /**
      * @test
-     * @dataProvider \Tymon\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderTokensWithWrongSegmentsNumber
+     * @dataProvider \PHPOpenSourceSaver\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderTokensWithWrongSegmentsNumber
      */
-    public function it_should_return_false_when_providing_a_token_with_wrong_segments_number($token)
+    public function itShouldReturnFalseWhenProvidingATokenWithWrongSegmentsNumber($token)
     {
         $this->assertFalse($this->validator->isValid($token));
     }
 
     /**
      * @test
-     * @dataProvider \Tymon\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderTokensWithWrongSegmentsNumber
+     * @dataProvider \PHPOpenSourceSaver\JWTAuth\Test\Validators\TokenValidatorTest::dataProviderTokensWithWrongSegmentsNumber
      */
-    public function it_should_throw_an_exception_when_providing_a_malformed_token_with_wrong_segments_number($token)
+    public function itShouldThrowAnExceptionWhenProvidingAMalformedTokenWithWrongSegmentsNumber($token)
     {
         $this->expectException(TokenInvalidException::class);
         $this->expectExceptionMessage('Wrong number of segments');

@@ -3,33 +3,30 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth;
+namespace PHPOpenSourceSaver\JWTAuth;
 
-use Tymon\JWTAuth\Contracts\Providers\Auth;
-use Tymon\JWTAuth\Http\Parser\Parser;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use PHPOpenSourceSaver\JWTAuth\Contracts\Providers\Auth;
+use PHPOpenSourceSaver\JWTAuth\Http\Parser\Parser;
 
-/** @deprecated */
 class JWTAuth extends JWT
 {
     /**
      * The authentication provider.
      *
-     * @var \Tymon\JWTAuth\Contracts\Providers\Auth
+     * @var Auth
      */
     protected $auth;
 
     /**
      * Constructor.
-     *
-     * @param  \Tymon\JWTAuth\Manager  $manager
-     * @param  \Tymon\JWTAuth\Contracts\Providers\Auth  $auth
-     * @param  \Tymon\JWTAuth\Http\Parser\Parser  $parser
      *
      * @return void
      */
@@ -42,13 +39,11 @@ class JWTAuth extends JWT
     /**
      * Attempt to authenticate the user and return the token.
      *
-     * @param  array  $credentials
-     *
      * @return false|string
      */
     public function attempt(array $credentials)
     {
-        if (! $this->auth->byCredentials($credentials)) {
+        if (!$this->auth->byCredentials($credentials)) {
             return false;
         }
 
@@ -58,13 +53,13 @@ class JWTAuth extends JWT
     /**
      * Authenticate a user via a token.
      *
-     * @return \Tymon\JWTAuth\Contracts\JWTSubject|false
+     * @return JWTSubject|false
      */
     public function authenticate()
     {
         $id = $this->getPayload()->get('sub');
 
-        if (! $this->auth->byId($id)) {
+        if (!$this->auth->byId($id)) {
             return false;
         }
 
@@ -74,7 +69,7 @@ class JWTAuth extends JWT
     /**
      * Alias for authenticate().
      *
-     * @return \Tymon\JWTAuth\Contracts\JWTSubject|false
+     * @return JWTSubject|false
      */
     public function toUser()
     {
@@ -84,7 +79,7 @@ class JWTAuth extends JWT
     /**
      * Get the authenticated user.
      *
-     * @return \Tymon\JWTAuth\Contracts\JWTSubject
+     * @return JWTSubject
      */
     public function user()
     {

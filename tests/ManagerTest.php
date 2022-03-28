@@ -3,58 +3,46 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test;
+namespace PHPOpenSourceSaver\JWTAuth\Test;
 
 use Mockery;
-use Tymon\JWTAuth\Blacklist;
-use Tymon\JWTAuth\Claims\Collection;
-use Tymon\JWTAuth\Claims\Expiration;
-use Tymon\JWTAuth\Claims\IssuedAt;
-use Tymon\JWTAuth\Claims\Issuer;
-use Tymon\JWTAuth\Claims\JwtId;
-use Tymon\JWTAuth\Claims\NotBefore;
-use Tymon\JWTAuth\Claims\Subject;
-use Tymon\JWTAuth\Contracts\Providers\JWT;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
-use Tymon\JWTAuth\Factory;
-use Tymon\JWTAuth\Manager;
-use Tymon\JWTAuth\Payload;
-use Tymon\JWTAuth\Token;
-use Tymon\JWTAuth\Validators\PayloadValidator;
+use Mockery\LegacyMockInterface;
+use PHPOpenSourceSaver\JWTAuth\Blacklist;
+use PHPOpenSourceSaver\JWTAuth\Claims\Collection;
+use PHPOpenSourceSaver\JWTAuth\Claims\Expiration;
+use PHPOpenSourceSaver\JWTAuth\Claims\IssuedAt;
+use PHPOpenSourceSaver\JWTAuth\Claims\Issuer;
+use PHPOpenSourceSaver\JWTAuth\Claims\JwtId;
+use PHPOpenSourceSaver\JWTAuth\Claims\NotBefore;
+use PHPOpenSourceSaver\JWTAuth\Claims\Subject;
+use PHPOpenSourceSaver\JWTAuth\Contracts\Providers\JWT;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\InvalidClaimException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenBlacklistedException;
+use PHPOpenSourceSaver\JWTAuth\Factory;
+use PHPOpenSourceSaver\JWTAuth\Manager;
+use PHPOpenSourceSaver\JWTAuth\Payload;
+use PHPOpenSourceSaver\JWTAuth\Token;
+use PHPOpenSourceSaver\JWTAuth\Validators\PayloadValidator;
 
 class ManagerTest extends AbstractTestCase
 {
-    /**
-     * @var \Mockery\MockInterface|\Tymon\JWTAuth\Contracts\Providers\JWT
-     */
-    protected $jwt;
+    protected LegacyMockInterface $jwt;
 
-    /**
-     * @var \Mockery\MockInterface|\Tymon\JWTAuth\Blacklist
-     */
-    protected $blacklist;
+    protected LegacyMockInterface $blacklist;
 
-    /**
-     * @var \Mockery\MockInterface|\Tymon\JWTAuth\Factory
-     */
-    protected $factory;
+    protected LegacyMockInterface $factory;
 
-    /**
-     * @var \Tymon\JWTAuth\Manager
-     */
-    protected $manager;
+    protected Manager $manager;
 
-    /**
-     * @var \Mockery\MockInterface
-     */
-    protected $validator;
+    protected LegacyMockInterface $validator;
 
     public function setUp(): void
     {
@@ -67,8 +55,10 @@ class ManagerTest extends AbstractTestCase
         $this->validator = Mockery::mock(PayloadValidator::class);
     }
 
-    /** @test */
-    public function it_should_encode_a_payload()
+    /** @test
+     * @throws InvalidClaimException
+     */
+    public function itShouldEncodeAPayload()
     {
         $claims = [
             new Subject(1),
@@ -91,8 +81,10 @@ class ManagerTest extends AbstractTestCase
         $this->assertEquals($token, 'foo.bar.baz');
     }
 
-    /** @test */
-    public function it_should_decode_a_token()
+    /** @test
+     * @throws InvalidClaimException|TokenBlacklistedException
+     */
+    public function itShouldDecodeAToken()
     {
         $claims = [
             new Subject(1),
@@ -123,8 +115,10 @@ class ManagerTest extends AbstractTestCase
         $this->assertSame($payload->count(), 6);
     }
 
-    /** @test */
-    public function it_should_throw_exception_when_token_is_blacklisted()
+    /** @test
+     * @throws InvalidClaimException
+     */
+    public function itShouldThrowExceptionWhenTokenIsBlacklisted()
     {
         $this->expectException(TokenBlacklistedException::class);
         $this->expectExceptionMessage('The token has been blacklisted');
@@ -154,8 +148,10 @@ class ManagerTest extends AbstractTestCase
         $this->manager->decode($token);
     }
 
-    /** @test */
-    public function it_should_refresh_a_token()
+    /** @test
+     * @throws InvalidClaimException
+     */
+    public function itShouldRefreshAToken()
     {
         $claims = [
             new Subject(1),
@@ -188,8 +184,10 @@ class ManagerTest extends AbstractTestCase
         $this->assertEquals('baz.bar.foo', $token);
     }
 
-    /** @test */
-    public function it_should_invalidate_a_token()
+    /** @test
+     * @throws InvalidClaimException
+     */
+    public function itShouldInvalidateAToken()
     {
         $claims = [
             new Subject(1),
@@ -218,8 +216,10 @@ class ManagerTest extends AbstractTestCase
         $this->manager->invalidate($token);
     }
 
-    /** @test */
-    public function it_should_force_invalidate_a_token_forever()
+    /** @test
+     * @throws InvalidClaimException
+     */
+    public function itShouldForceInvalidateATokenForever()
     {
         $claims = [
             new Subject(1),
@@ -249,7 +249,7 @@ class ManagerTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_when_enable_blacklist_is_set_to_false()
+    public function itShouldThrowAnExceptionWhenEnableBlacklistIsSetToFalse()
     {
         $this->expectException(JWTException::class);
         $this->expectExceptionMessage('You must have the blacklist enabled to invalidate a token.');
@@ -260,20 +260,44 @@ class ManagerTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_get_the_payload_factory()
+    public function itShouldGetThePayloadFactory()
     {
         $this->assertInstanceOf(Factory::class, $this->manager->getPayloadFactory());
     }
 
     /** @test */
-    public function it_should_get_the_jwt_provider()
+    public function itShouldGetTheJwtProvider()
     {
         $this->assertInstanceOf(JWT::class, $this->manager->getJWTProvider());
     }
 
     /** @test */
-    public function it_should_get_the_blacklist()
+    public function itShouldGetTheBlacklist()
     {
         $this->assertInstanceOf(Blacklist::class, $this->manager->getBlacklist());
+    }
+
+    /** @test */
+    public function testIfShowBlacklistedExceptionConfigurationIsEnabled()
+    {
+        $this->manager->setBlackListExceptionEnabled(true);
+
+        $this->assertIsBool($this->manager->getBlackListExceptionEnabled());
+    }
+
+    /** @test */
+    public function testIfBlackListedExceptionIsSetToTrue()
+    {
+        $this->manager->setBlackListExceptionEnabled(true);
+
+        $this->assertTrue($this->manager->getBlackListExceptionEnabled());
+    }
+
+    /** @test */
+    public function testIfBlackListedExceptionIsSetToFalse()
+    {
+        $this->manager->setBlackListExceptionEnabled(false);
+
+        $this->assertFalse($this->manager->getBlackListExceptionEnabled());
     }
 }

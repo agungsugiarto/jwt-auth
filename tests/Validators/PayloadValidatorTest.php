@@ -3,43 +3,45 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Validators;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Validators;
 
-use Tymon\JWTAuth\Claims\Collection;
-use Tymon\JWTAuth\Claims\Expiration;
-use Tymon\JWTAuth\Claims\IssuedAt;
-use Tymon\JWTAuth\Claims\Issuer;
-use Tymon\JWTAuth\Claims\JwtId;
-use Tymon\JWTAuth\Claims\NotBefore;
-use Tymon\JWTAuth\Claims\Subject;
-use Tymon\JWTAuth\Exceptions\InvalidClaimException;
-use Tymon\JWTAuth\Exceptions\TokenExpiredException;
-use Tymon\JWTAuth\Exceptions\TokenInvalidException;
-use Tymon\JWTAuth\Test\AbstractTestCase;
-use Tymon\JWTAuth\Validators\PayloadValidator;
+use PHPOpenSourceSaver\JWTAuth\Claims\Collection;
+use PHPOpenSourceSaver\JWTAuth\Claims\Expiration;
+use PHPOpenSourceSaver\JWTAuth\Claims\IssuedAt;
+use PHPOpenSourceSaver\JWTAuth\Claims\Issuer;
+use PHPOpenSourceSaver\JWTAuth\Claims\JwtId;
+use PHPOpenSourceSaver\JWTAuth\Claims\NotBefore;
+use PHPOpenSourceSaver\JWTAuth\Claims\Subject;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\InvalidClaimException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
+use PHPOpenSourceSaver\JWTAuth\Test\AbstractTestCase;
+use PHPOpenSourceSaver\JWTAuth\Validators\PayloadValidator;
 
 class PayloadValidatorTest extends AbstractTestCase
 {
-    /**
-     * @var \Tymon\JWTAuth\Validators\PayloadValidator
-     */
-    protected $validator;
+    protected PayloadValidator $validator;
 
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->validator = new PayloadValidator;
+        $this->validator = new PayloadValidator();
     }
 
-    /** @test */
-    public function it_should_return_true_when_providing_a_valid_payload()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldReturnTrueWhenProvidingAValidPayload()
     {
         $claims = [
             new Subject(1),
@@ -55,8 +57,12 @@ class PayloadValidatorTest extends AbstractTestCase
         $this->assertTrue($this->validator->isValid($collection));
     }
 
-    /** @test */
-    public function it_should_throw_an_exception_when_providing_an_expired_payload()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldThrowAnExceptionWhenProvidingAnExpiredPayload()
     {
         $this->expectException(TokenExpiredException::class);
         $this->expectExceptionMessage('Token has expired');
@@ -75,8 +81,12 @@ class PayloadValidatorTest extends AbstractTestCase
         $this->validator->check($collection);
     }
 
-    /** @test */
-    public function it_should_throw_an_exception_when_providing_an_invalid_nbf_claim()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldThrowAnExceptionWhenProvidingAnInvalidNbfClaim()
     {
         $this->expectException(TokenInvalidException::class);
         $this->expectExceptionMessage('Not Before (nbf) timestamp cannot be in the future');
@@ -96,7 +106,7 @@ class PayloadValidatorTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_when_providing_an_invalid_iat_claim()
+    public function itShouldThrowAnExceptionWhenProvidingAnInvalidIatClaim()
     {
         $this->expectException(InvalidClaimException::class);
         $this->expectExceptionMessage('Invalid value provided for claim [iat]');
@@ -115,8 +125,12 @@ class PayloadValidatorTest extends AbstractTestCase
         $this->validator->check($collection);
     }
 
-    /** @test */
-    public function it_should_throw_an_exception_when_providing_an_invalid_payload()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldThrowAnExceptionWhenProvidingAnInvalidPayload()
     {
         $this->expectException(TokenInvalidException::class);
         $this->expectExceptionMessage('JWT payload does not contain the required claims');
@@ -132,7 +146,7 @@ class PayloadValidatorTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_when_providing_an_invalid_expiry()
+    public function itShouldThrowAnExceptionWhenProvidingAnInvalidExpiry()
     {
         $this->expectException(InvalidClaimException::class);
         $this->expectExceptionMessage('Invalid value provided for claim [exp]');
@@ -151,8 +165,12 @@ class PayloadValidatorTest extends AbstractTestCase
         $this->validator->check($collection);
     }
 
-    /** @test */
-    public function it_should_set_the_required_claims()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldSetTheRequiredClaims()
     {
         $claims = [
             new Subject(1),
@@ -164,8 +182,12 @@ class PayloadValidatorTest extends AbstractTestCase
         $this->assertTrue($this->validator->setRequiredClaims(['iss', 'sub'])->isValid($collection));
     }
 
-    /** @test */
-    public function it_should_check_the_token_in_the_refresh_context()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldCheckTheTokenInTheRefreshContext()
     {
         $claims = [
             new Subject(1),
@@ -183,8 +205,12 @@ class PayloadValidatorTest extends AbstractTestCase
         );
     }
 
-    /** @test */
-    public function it_should_return_true_if_the_refresh_ttl_is_null()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldReturnTrueIfTheRefreshTtlIsNull()
     {
         $claims = [
             new Subject(1),
@@ -202,8 +228,12 @@ class PayloadValidatorTest extends AbstractTestCase
         );
     }
 
-    /** @test */
-    public function it_should_throw_an_exception_if_the_token_cannot_be_refreshed()
+    /**
+     * @test
+     *
+     * @throws InvalidClaimException
+     */
+    public function itShouldThrowAnExceptionIfTheTokenCannotBeRefreshed()
     {
         $this->expectException(TokenExpiredException::class);
         $this->expectExceptionMessage('Token has expired and can no longer be refreshed');

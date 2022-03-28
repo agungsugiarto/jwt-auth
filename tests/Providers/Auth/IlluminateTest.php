@@ -3,28 +3,30 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Providers\Auth;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Providers\Auth;
 
 use Illuminate\Contracts\Auth\Guard;
 use Mockery;
-use Tymon\JWTAuth\Providers\Auth\Illuminate as Auth;
-use Tymon\JWTAuth\Test\AbstractTestCase;
+use Mockery\MockInterface;
+use PHPOpenSourceSaver\JWTAuth\Providers\Auth\Illuminate as Auth;
+use PHPOpenSourceSaver\JWTAuth\Test\AbstractTestCase;
 
 class IlluminateTest extends AbstractTestCase
 {
     /**
-     * @var \Mockery\MockInterface|\Illuminate\Contracts\Auth\Guard
+     * @var MockInterface|Guard
      */
     protected $authManager;
 
     /**
-     * @var \Tymon\JWTAuth\Providers\Auth\Illuminate
+     * @var Auth
      */
     protected $auth;
 
@@ -37,28 +39,28 @@ class IlluminateTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_true_if_credentials_are_valid()
+    public function itShouldReturnTrueIfCredentialsAreValid()
     {
         $this->authManager->shouldReceive('once')->once()->with(['email' => 'foo@bar.com', 'password' => 'foobar'])->andReturn(true);
         $this->assertTrue($this->auth->byCredentials(['email' => 'foo@bar.com', 'password' => 'foobar']));
     }
 
     /** @test */
-    public function it_should_return_true_if_user_is_found()
+    public function itShouldReturnTrueIfUserIsFound()
     {
         $this->authManager->shouldReceive('onceUsingId')->once()->with(123)->andReturn(true);
         $this->assertTrue($this->auth->byId(123));
     }
 
     /** @test */
-    public function it_should_return_false_if_user_is_not_found()
+    public function itShouldReturnFalseIfUserIsNotFound()
     {
         $this->authManager->shouldReceive('onceUsingId')->once()->with(123)->andReturn(false);
         $this->assertFalse($this->auth->byId(123));
     }
 
     /** @test */
-    public function it_should_return_the_currently_authenticated_user()
+    public function itShouldReturnTheCurrentlyAuthenticatedUser()
     {
         $this->authManager->shouldReceive('user')->once()->andReturn((object) ['id' => 1]);
         $this->assertSame($this->auth->user()->id, 1);

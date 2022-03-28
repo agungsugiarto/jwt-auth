@@ -3,24 +3,25 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Middleware;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Middleware;
 
 use Mockery;
-use Tymon\JWTAuth\Exceptions\TokenInvalidException;
-use Tymon\JWTAuth\Http\Middleware\Check;
-use Tymon\JWTAuth\Http\Parser\Parser;
-use Tymon\JWTAuth\Test\Stubs\UserStub;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
+use PHPOpenSourceSaver\JWTAuth\Http\Middleware\Check;
+use PHPOpenSourceSaver\JWTAuth\Http\Parser\Parser;
+use PHPOpenSourceSaver\JWTAuth\Test\Stubs\UserStub;
 
 class CheckTest extends AbstractMiddlewareTest
 {
     /**
-     * @var \Tymon\JWTAuth\Http\Middleware\Check
+     * @var Check
      */
     protected $middleware;
 
@@ -32,7 +33,7 @@ class CheckTest extends AbstractMiddlewareTest
     }
 
     /** @test */
-    public function it_should_authenticate_a_user_if_a_token_is_present()
+    public function itShouldAuthenticateAUserIfATokenIsPresent()
     {
         $parser = Mockery::mock(Parser::class);
         $parser->shouldReceive('hasToken')->once()->andReturn(true);
@@ -40,15 +41,14 @@ class CheckTest extends AbstractMiddlewareTest
         $this->auth->shouldReceive('parser')->andReturn($parser);
 
         $this->auth->parser()->shouldReceive('setRequest')->once()->with($this->request)->andReturn($this->auth->parser());
-        $this->auth->shouldReceive('parseToken->authenticate')->once()->andReturn(new UserStub);
+        $this->auth->shouldReceive('parseToken->authenticate')->once()->andReturn(new UserStub());
 
         $this->middleware->handle($this->request, function () {
-            //
         });
     }
 
     /** @test */
-    public function it_should_unset_the_exception_if_a_token_is_present()
+    public function itShouldUnsetTheExceptionIfATokenIsPresent()
     {
         $parser = Mockery::mock(Parser::class);
         $parser->shouldReceive('hasToken')->once()->andReturn(true);
@@ -56,15 +56,14 @@ class CheckTest extends AbstractMiddlewareTest
         $this->auth->shouldReceive('parser')->andReturn($parser);
 
         $this->auth->parser()->shouldReceive('setRequest')->once()->with($this->request)->andReturn($this->auth->parser());
-        $this->auth->shouldReceive('parseToken->authenticate')->once()->andThrow(new TokenInvalidException);
+        $this->auth->shouldReceive('parseToken->authenticate')->once()->andThrow(new TokenInvalidException());
 
         $this->middleware->handle($this->request, function () {
-            //
         });
     }
 
     /** @test */
-    public function it_should_do_nothing_if_a_token_is_not_present()
+    public function itShouldDoNothingIfATokenIsNotPresent()
     {
         $parser = Mockery::mock(Parser::class);
         $parser->shouldReceive('hasToken')->once()->andReturn(false);
@@ -75,7 +74,6 @@ class CheckTest extends AbstractMiddlewareTest
         $this->auth->shouldReceive('parseToken->authenticate')->never();
 
         $this->middleware->handle($this->request, function () {
-            //
         });
     }
 }

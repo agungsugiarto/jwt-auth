@@ -3,26 +3,28 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Middleware;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Middleware;
 
 use Illuminate\Http\Response;
 use Mockery;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
+use PHPOpenSourceSaver\JWTAuth\Http\Middleware\Authenticate;
+use PHPOpenSourceSaver\JWTAuth\Http\Middleware\AuthenticateAndRenew;
+use PHPOpenSourceSaver\JWTAuth\Http\Parser\Parser;
+use PHPOpenSourceSaver\JWTAuth\Test\Stubs\UserStub;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use Tymon\JWTAuth\Exceptions\TokenInvalidException;
-use Tymon\JWTAuth\Http\Middleware\AuthenticateAndRenew;
-use Tymon\JWTAuth\Http\Parser\Parser;
-use Tymon\JWTAuth\Test\Stubs\UserStub;
 
 class AuthenticateAndRenewTest extends AbstractMiddlewareTest
 {
     /**
-     * @var \Tymon\JWTAuth\Http\Middleware\Authenticate|\Tymon\JWTAuth\Http\Middleware\AuthenticateAndRenew
+     * @var Authenticate|AuthenticateAndRenew
      */
     protected $middleware;
 
@@ -34,26 +36,26 @@ class AuthenticateAndRenewTest extends AbstractMiddlewareTest
     }
 
     /** @test */
-    public function it_should_authenticate_a_user_and_return_a_new_token()
+    public function itShouldAuthenticateAUserAndReturnANewToken()
     {
         $parser = Mockery::mock(Parser::class);
         $parser->shouldReceive('hasToken')->once()->andReturn(true);
         $this->auth->shouldReceive('parser')->andReturn($parser);
         $this->auth->parser()->shouldReceive('setRequest')->once()->with($this->request)->andReturn($this->auth->parser());
 
-        $this->auth->shouldReceive('parseToken->authenticate')->once()->andReturn(new UserStub);
+        $this->auth->shouldReceive('parseToken->authenticate')->once()->andReturn(new UserStub());
 
         $this->auth->shouldReceive('refresh')->once()->andReturn('foo.bar.baz');
 
         $response = $this->middleware->handle($this->request, function () {
-            return new Response;
+            return new Response();
         });
 
         $this->assertSame($response->headers->get('authorization'), 'Bearer foo.bar.baz');
     }
 
     /** @test */
-    public function it_should_throw_an_unauthorized_exception_if_token_not_provided()
+    public function itShouldThrowAnUnauthorizedExceptionIfTokenNotProvided()
     {
         $this->expectException(UnauthorizedHttpException::class);
 
@@ -64,12 +66,11 @@ class AuthenticateAndRenewTest extends AbstractMiddlewareTest
         $this->auth->parser()->shouldReceive('setRequest')->once()->with($this->request)->andReturn($this->auth->parser());
 
         $this->middleware->handle($this->request, function () {
-            //
         });
     }
 
     /** @test */
-    public function it_should_throw_an_unauthorized_exception_if_token_invalid()
+    public function itShouldThrowAnUnauthorizedExceptionIfTokenInvalid()
     {
         $this->expectException(UnauthorizedHttpException::class);
 
@@ -79,10 +80,9 @@ class AuthenticateAndRenewTest extends AbstractMiddlewareTest
         $this->auth->shouldReceive('parser')->andReturn($parser);
 
         $this->auth->parser()->shouldReceive('setRequest')->once()->with($this->request)->andReturn($this->auth->parser());
-        $this->auth->shouldReceive('parseToken->authenticate')->once()->andThrow(new TokenInvalidException);
+        $this->auth->shouldReceive('parseToken->authenticate')->once()->andThrow(new TokenInvalidException());
 
         $this->middleware->handle($this->request, function () {
-            //
         });
     }
 }

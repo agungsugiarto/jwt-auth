@@ -3,43 +3,36 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test;
+namespace PHPOpenSourceSaver\JWTAuth\Test;
 
 use Mockery;
-use Tymon\JWTAuth\Blacklist;
-use Tymon\JWTAuth\Claims\Collection;
-use Tymon\JWTAuth\Claims\Expiration;
-use Tymon\JWTAuth\Claims\IssuedAt;
-use Tymon\JWTAuth\Claims\Issuer;
-use Tymon\JWTAuth\Claims\JwtId;
-use Tymon\JWTAuth\Claims\NotBefore;
-use Tymon\JWTAuth\Claims\Subject;
-use Tymon\JWTAuth\Contracts\Providers\Storage;
-use Tymon\JWTAuth\Payload;
-use Tymon\JWTAuth\Validators\PayloadValidator;
+use Mockery\LegacyMockInterface;
+use PHPOpenSourceSaver\JWTAuth\Blacklist;
+use PHPOpenSourceSaver\JWTAuth\Claims\Collection;
+use PHPOpenSourceSaver\JWTAuth\Claims\Expiration;
+use PHPOpenSourceSaver\JWTAuth\Claims\IssuedAt;
+use PHPOpenSourceSaver\JWTAuth\Claims\Issuer;
+use PHPOpenSourceSaver\JWTAuth\Claims\JwtId;
+use PHPOpenSourceSaver\JWTAuth\Claims\NotBefore;
+use PHPOpenSourceSaver\JWTAuth\Claims\Subject;
+use PHPOpenSourceSaver\JWTAuth\Contracts\Providers\Storage;
+use PHPOpenSourceSaver\JWTAuth\Payload;
+use PHPOpenSourceSaver\JWTAuth\Validators\PayloadValidator;
 
 class BlacklistTest extends AbstractTestCase
 {
-    /**
-     * @var \Tymon\JWTAuth\Contracts\Providers\Storage|\Mockery\MockInterface
-     */
-    protected $storage;
+    protected LegacyMockInterface $storage;
 
-    /**
-     * @var \Tymon\JWTAuth\Blacklist
-     */
-    protected $blacklist;
+    protected Blacklist $blacklist;
 
-    /**
-     * @var \Mockery\MockInterface|\Tymon\JWTAuth\Validators\Validator
-     */
-    protected $validator;
+    protected LegacyMockInterface $validator;
 
     public function setUp(): void
     {
@@ -51,7 +44,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_add_a_valid_token_to_the_blacklist()
+    public function itShouldAddAValidTokenToTheBlacklist()
     {
         $claims = [
             new Subject(1),
@@ -83,7 +76,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_add_a_token_with_no_exp_to_the_blacklist_forever()
+    public function itShouldAddATokenWithNoExpToTheBlacklistForever()
     {
         $claims = [
             new Subject(1),
@@ -103,7 +96,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_true_when_adding_an_expired_token_to_the_blacklist()
+    public function itShouldReturnTrueWhenAddingAnExpiredTokenToTheBlacklist()
     {
         $claims = [
             new Subject(1),
@@ -134,7 +127,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_true_early_when_adding_an_item_and_it_already_exists()
+    public function itShouldReturnTrueEarlyWhenAddingAnItemAndItAlreadyExists()
     {
         $claims = [
             new Subject(1),
@@ -165,7 +158,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_check_whether_a_token_has_been_blacklisted()
+    public function itShouldCheckWhetherATokenHasBeenBlacklisted()
     {
         $claims = [
             new Subject(1),
@@ -204,7 +197,7 @@ class BlacklistTest extends AbstractTestCase
      *
      * @param mixed $result
      */
-    public function it_should_check_whether_a_token_has_not_been_blacklisted($result)
+    public function itShouldCheckWhetherATokenHasNotBeenBlacklisted($result)
     {
         $claims = [
             new Subject(1),
@@ -226,7 +219,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_check_whether_a_token_has_been_blacklisted_forever()
+    public function itShouldCheckWhetherATokenHasBeenBlacklistedForever()
     {
         $claims = [
             new Subject(1),
@@ -248,7 +241,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_check_whether_a_token_has_been_blacklisted_when_the_token_is_not_blacklisted()
+    public function itShouldCheckWhetherATokenHasBeenBlacklistedWhenTheTokenIsNotBlacklisted()
     {
         $claims = [
             new Subject(1),
@@ -270,7 +263,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_remove_a_token_from_the_blacklist()
+    public function itShouldRemoveATokenFromTheBlacklist()
     {
         $claims = [
             new Subject(1),
@@ -291,7 +284,7 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_set_a_custom_unique_key_for_the_blacklist()
+    public function itShouldSetACustomUniqueKeyForTheBlacklist()
     {
         $claims = [
             new Subject(1),
@@ -314,21 +307,21 @@ class BlacklistTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_empty_the_blacklist()
+    public function itShouldEmptyTheBlacklist()
     {
         $this->storage->shouldReceive('flush');
         $this->assertTrue($this->blacklist->clear());
     }
 
     /** @test */
-    public function it_should_set_and_get_the_blacklist_grace_period()
+    public function itShouldSetAndGetTheBlacklistGracePeriod()
     {
         $this->assertInstanceOf(Blacklist::class, $this->blacklist->setGracePeriod(15));
         $this->assertSame(15, $this->blacklist->getGracePeriod());
     }
 
     /** @test */
-    public function it_should_set_and_get_the_blacklist_refresh_ttl()
+    public function itShouldSetAndGetTheBlacklistRefreshTtl()
     {
         $this->assertInstanceOf(Blacklist::class, $this->blacklist->setRefreshTTL(15));
         $this->assertSame(15, $this->blacklist->getRefreshTTL());

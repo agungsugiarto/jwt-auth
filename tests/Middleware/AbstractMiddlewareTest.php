@@ -3,28 +3,30 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test\Middleware;
+namespace PHPOpenSourceSaver\JWTAuth\Test\Middleware;
 
 use Illuminate\Http\Request;
 use Mockery;
-use Tymon\JWTAuth\JWTAuth;
-use Tymon\JWTAuth\Test\AbstractTestCase;
+use Mockery\MockInterface;
+use PHPOpenSourceSaver\JWTAuth\JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\Test\AbstractTestCase;
 
 abstract class AbstractMiddlewareTest extends AbstractTestCase
 {
     /**
-     * @var \Mockery\MockInterface|\Tymon\JWTAuth\JWTAuth
+     * @var MockInterface|JWTAuth
      */
     protected $auth;
 
     /**
-     * @var \Mockery\MockInterface|\Illuminate\Http\Request
+     * @var MockInterface|Request
      */
     protected $request;
 

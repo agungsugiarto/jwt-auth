@@ -3,13 +3,14 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Http\Parser;
+namespace PHPOpenSourceSaver\JWTAuth\Http\Parser;
 
 use Illuminate\Http\Request;
 
@@ -17,23 +18,16 @@ class Parser
 {
     /**
      * The chain.
-     *
-     * @var array
      */
-    private $chain;
+    private array $chain;
 
     /**
      * The request.
-     *
-     * @var \Illuminate\Http\Request
      */
-    protected $request;
+    protected Request $request;
 
     /**
      * Constructor.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  array  $chain
      *
      * @return void
      */
@@ -56,7 +50,7 @@ class Parser
     /**
      * Add a new parser to the chain.
      *
-     * @param array|\Tymon\JWTAuth\Contracts\Http\Parser $parsers
+     * @param array|\PHPOpenSourceSaver\JWTAuth\Contracts\Http\Parser $parsers
      *
      * @return $this
      */
@@ -70,8 +64,6 @@ class Parser
     /**
      * Set the order of the parser chain.
      *
-     * @param  array  $chain
-     *
      * @return $this
      */
     public function setChain(array $chain)
@@ -83,8 +75,6 @@ class Parser
 
     /**
      * Alias for setting the order of the chain.
-     *
-     * @param  array  $chain
      *
      * @return $this
      */
@@ -115,13 +105,11 @@ class Parser
      */
     public function hasToken()
     {
-        return $this->parseToken() !== null;
+        return null !== $this->parseToken();
     }
 
     /**
      * Set the request instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
      *
      * @return $this
      */

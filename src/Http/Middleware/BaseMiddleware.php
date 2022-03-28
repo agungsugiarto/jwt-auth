@@ -3,33 +3,32 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Http\Middleware;
+namespace PHPOpenSourceSaver\JWTAuth\Http\Middleware;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\JWTAuth;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\JWTAuth;
 
-/** @deprecated */
 abstract class BaseMiddleware
 {
     /**
      * The JWT Authenticator.
-     *
-     * @var \Tymon\JWTAuth\JWTAuth
      */
-    protected $auth;
+    protected JWTAuth $auth;
 
     /**
      * Create a new BaseMiddleware instance.
-     *
-     * @param  \Tymon\JWTAuth\JWTAuth  $auth
      *
      * @return void
      */
@@ -41,15 +40,13 @@ abstract class BaseMiddleware
     /**
      * Check the request for the presence of a token.
      *
-     * @param  \Illuminate\Http\Request  $request
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\BadRequestHttpException
-     *
      * @return void
+     *
+     * @throws BadRequestHttpException
      */
     public function checkForToken(Request $request)
     {
-        if (! $this->auth->parser()->setRequest($request)->hasToken()) {
+        if (!$this->auth->parser()->setRequest($request)->hasToken()) {
             throw new UnauthorizedHttpException('jwt-auth', 'Token not provided');
         }
     }
@@ -57,18 +54,16 @@ abstract class BaseMiddleware
     /**
      * Attempt to authenticate a user via the token in the request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException
-     *
      * @return void
+     *
+     * @throws UnauthorizedHttpException
      */
     public function authenticate(Request $request)
     {
         $this->checkForToken($request);
 
         try {
-            if (! $this->auth->parseToken()->authenticate()) {
+            if (!$this->auth->parseToken()->authenticate()) {
                 throw new UnauthorizedHttpException('jwt-auth', 'User not found');
             }
         } catch (JWTException $e) {
@@ -79,10 +74,10 @@ abstract class BaseMiddleware
     /**
      * Set the authentication header.
      *
-     * @param  \Illuminate\Http\Response|\Illuminate\Http\JsonResponse  $response
-     * @param  string|null  $token
+     * @param Response|JsonResponse $response
+     * @param string|null           $token
      *
-     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     * @return Response|JsonResponse
      */
     protected function setAuthenticationHeader($response, $token = null)
     {

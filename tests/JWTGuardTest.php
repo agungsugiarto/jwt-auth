@@ -3,41 +3,42 @@
 /*
  * This file is part of jwt-auth.
  *
- * (c) Sean Tymon <tymon148@gmail.com>
+ * (c) 2014-2021 Sean Tymon <tymon148@gmail.com>
+ * (c) 2021 PHP Open Source Saver
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tymon\JWTAuth\Test;
+namespace PHPOpenSourceSaver\JWTAuth\Test;
 
 use Illuminate\Auth\EloquentUserProvider;
+use Illuminate\Auth\Events\Attempting;
+use Illuminate\Auth\Events\Authenticated;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Mockery;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Exceptions\UserNotDefinedException;
-use Tymon\JWTAuth\Factory;
-use Tymon\JWTAuth\JWT;
-use Tymon\JWTAuth\JWTGuard;
-use Tymon\JWTAuth\Payload;
-use Tymon\JWTAuth\Test\Stubs\LaravelUserStub;
+use Mockery\LegacyMockInterface;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\UserNotDefinedException;
+use PHPOpenSourceSaver\JWTAuth\Factory;
+use PHPOpenSourceSaver\JWTAuth\JWT;
+use PHPOpenSourceSaver\JWTAuth\JWTGuard;
+use PHPOpenSourceSaver\JWTAuth\Payload;
+use PHPOpenSourceSaver\JWTAuth\Test\Stubs\LaravelUserStub;
 
 class JWTGuardTest extends AbstractTestCase
 {
-    /**
-     * @var \Tymon\JWTAuth\JWT|\Mockery\MockInterface
-     */
-    protected $jwt;
+    protected LegacyMockInterface $jwt;
 
-    /**
-     * @var \Illuminate\Contracts\Auth\UserProvider|\Mockery\MockInterface
-     */
-    protected $provider;
+    protected LegacyMockInterface $provider;
 
-    /**
-     * @var \Tymon\JWTAuth\JWTGuard|\Mockery\MockInterface
-     */
-    protected $guard;
+    protected JWTGuard $guard;
+
+    protected LegacyMockInterface $eventDispatcher;
 
     public function setUp(): void
     {
@@ -45,17 +46,23 @@ class JWTGuardTest extends AbstractTestCase
 
         $this->jwt = Mockery::mock(JWT::class);
         $this->provider = Mockery::mock(EloquentUserProvider::class);
-        $this->guard = new JWTGuard($this->jwt, $this->provider, Request::create('/foo', 'GET'));
+        $this->eventDispatcher = Mockery::mock(Dispatcher::class);
+        $this->guard = new JWTGuard(
+            $this->jwt,
+            $this->provider,
+            Request::create('/foo', 'GET'),
+            $this->eventDispatcher
+        );
     }
 
     /** @test */
-    public function it_should_get_the_request()
+    public function itShouldGetTheRequest()
     {
         $this->assertInstanceOf(Request::class, $this->guard->getRequest());
     }
 
     /** @test */
-    public function it_should_get_the_authenticated_user_if_a_valid_token_is_provided()
+    public function itShouldGetTheAuthenticatedUserIfAValidTokenIsProvided()
     {
         $payload = Mockery::mock(Payload::class);
         $payload->shouldReceive('offsetGet')->once()->with('sub')->andReturn(1);
@@ -64,17 +71,17 @@ class JWTGuardTest extends AbstractTestCase
         $this->jwt->shouldReceive('getToken')->once()->andReturn('foo.bar.baz');
         $this->jwt->shouldReceive('check')->once()->with(true)->andReturn($payload);
         $this->jwt->shouldReceive('checkSubjectModel')
-                  ->once()
-                  ->with('\Tymon\JWTAuth\Test\Stubs\LaravelUserStub')
-                  ->andReturn(true);
+            ->once()
+            ->with('\PHPOpenSourceSaver\JWTAuth\Test\Stubs\LaravelUserStub')
+            ->andReturn(true);
 
         $this->provider->shouldReceive('getModel')
-                       ->once()
-                       ->andReturn('\Tymon\JWTAuth\Test\Stubs\LaravelUserStub');
+            ->once()
+            ->andReturn('\PHPOpenSourceSaver\JWTAuth\Test\Stubs\LaravelUserStub');
         $this->provider->shouldReceive('retrieveById')
-                       ->once()
-                       ->with(1)
-                       ->andReturn((object) ['id' => 1]);
+            ->once()
+            ->with(1)
+            ->andReturn((object) ['id' => 1]);
 
         $this->assertSame(1, $this->guard->user()->id);
 
@@ -87,7 +94,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_get_the_authenticated_user_if_a_valid_token_is_provided_and_not_throw_an_exception()
+    public function itShouldGetTheAuthenticatedUserIfAValidTokenIsProvidedAndNotThrowAnException()
     {
         $payload = Mockery::mock(Payload::class);
         $payload->shouldReceive('offsetGet')->once()->with('sub')->andReturn(1);
@@ -96,17 +103,17 @@ class JWTGuardTest extends AbstractTestCase
         $this->jwt->shouldReceive('getToken')->once()->andReturn('foo.bar.baz');
         $this->jwt->shouldReceive('check')->once()->with(true)->andReturn($payload);
         $this->jwt->shouldReceive('checkSubjectModel')
-                  ->once()
-                  ->with('\Tymon\JWTAuth\Test\Stubs\LaravelUserStub')
-                  ->andReturn(true);
+            ->once()
+            ->with('\PHPOpenSourceSaver\JWTAuth\Test\Stubs\LaravelUserStub')
+            ->andReturn(true);
 
         $this->provider->shouldReceive('getModel')
-                       ->once()
-                       ->andReturn('\Tymon\JWTAuth\Test\Stubs\LaravelUserStub');
+            ->once()
+            ->andReturn('\PHPOpenSourceSaver\JWTAuth\Test\Stubs\LaravelUserStub');
         $this->provider->shouldReceive('retrieveById')
-             ->once()
-             ->with(1)
-             ->andReturn((object) ['id' => 1]);
+            ->once()
+            ->with(1)
+            ->andReturn((object) ['id' => 1]);
 
         $this->assertSame(1, $this->guard->userOrFail()->id);
 
@@ -116,7 +123,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_null_if_an_invalid_token_is_provided()
+    public function itShouldReturnNullIfAnInvalidTokenIsProvided()
     {
         $this->jwt->shouldReceive('setRequest')->andReturn($this->jwt);
         $this->jwt->shouldReceive('getToken')->twice()->andReturn('invalid.token.here');
@@ -129,7 +136,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_null_if_no_token_is_provided()
+    public function itShouldReturnNullIfNoTokenIsProvided()
     {
         $this->jwt->shouldReceive('setRequest')->andReturn($this->jwt);
         $this->jwt->shouldReceive('getToken')->andReturn(false);
@@ -142,7 +149,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_if_an_invalid_token_is_provided()
+    public function itShouldThrowAnExceptionIfAnInvalidTokenIsProvided()
     {
         $this->expectException(UserNotDefinedException::class);
         $this->expectExceptionMessage('An error occurred');
@@ -158,7 +165,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_if_no_token_is_provided()
+    public function itShouldThrowAnExceptionIfNoTokenIsProvided()
     {
         $this->expectException(UserNotDefinedException::class);
         $this->expectExceptionMessage('An error occurred');
@@ -174,35 +181,53 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_a_token_if_credentials_are_ok_and_user_is_found()
+    public function itShouldReturnATokenIfCredentialsAreOkAndUserIsFound()
     {
         $credentials = ['foo' => 'bar', 'baz' => 'bob'];
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->provider->shouldReceive('retrieveByCredentials')
-                       ->once()
-                       ->with($credentials)
-                       ->andReturn($user);
+            ->once()
+            ->with($credentials)
+            ->andReturn($user);
 
         $this->provider->shouldReceive('validateCredentials')
-                       ->once()
-                       ->with($user, $credentials)
-                       ->andReturn(true);
+            ->once()
+            ->with($user, $credentials)
+            ->andReturn(true);
 
         $this->jwt->shouldReceive('fromUser')
-                  ->once()
-                  ->with($user)
-                  ->andReturn('foo.bar.baz');
+            ->once()
+            ->with($user)
+            ->andReturn('foo.bar.baz');
 
         $this->jwt->shouldReceive('setToken')
-                  ->once()
-                  ->with('foo.bar.baz')
-                  ->andReturnSelf();
+            ->once()
+            ->with('foo.bar.baz')
+            ->andReturnSelf();
 
         $this->jwt->shouldReceive('claims')
-                  ->once()
-                  ->with(['foo' => 'bar'])
-                  ->andReturnSelf();
+            ->once()
+            ->with(['foo' => 'bar'])
+            ->andReturnSelf();
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Attempting::class));
+
+        if (class_exists('Illuminate\Auth\Events\Validated')) {
+            $this->eventDispatcher->shouldReceive('dispatch')
+                ->once()
+                ->with(Mockery::type('Illuminate\Auth\Events\Validated'));
+        }
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Authenticated::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Login::class));
 
         $token = $this->guard->claims(['foo' => 'bar'])->attempt($credentials);
 
@@ -211,65 +236,107 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_return_true_if_credentials_are_ok_and_user_is_found_when_choosing_not_to_login()
+    public function itShouldReturnTrueIfCredentialsAreOkAndUserIsFoundWhenChoosingNotToLogin()
     {
         $credentials = ['foo' => 'bar', 'baz' => 'bob'];
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->provider->shouldReceive('retrieveByCredentials')
-                       ->twice()
-                       ->with($credentials)
-                       ->andReturn($user);
+            ->twice()
+            ->with($credentials)
+            ->andReturn($user);
 
         $this->provider->shouldReceive('validateCredentials')
-                       ->twice()
-                       ->with($user, $credentials)
-                       ->andReturn(true);
+            ->twice()
+            ->with($user, $credentials)
+            ->andReturn(true);
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->twice()
+            ->with(Mockery::type(Attempting::class));
+
+        if (class_exists('Illuminate\Auth\Events\Validated')) {
+            $this->eventDispatcher->shouldReceive('dispatch')
+                ->twice()
+                ->with(Mockery::type('Illuminate\Auth\Events\Validated'));
+        }
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Authenticated::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Login::class));
 
         $this->assertTrue($this->guard->attempt($credentials, false)); // once
         $this->assertTrue($this->guard->validate($credentials)); // twice
     }
 
     /** @test */
-    public function it_should_return_false_if_credentials_are_invalid()
+    public function itShouldReturnFalseIfCredentialsAreInvalid()
     {
         $credentials = ['foo' => 'bar', 'baz' => 'bob'];
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->provider->shouldReceive('retrieveByCredentials')
-                       ->once()
-                       ->with($credentials)
-                       ->andReturn($user);
+            ->once()
+            ->with($credentials)
+            ->andReturn($user);
 
         $this->provider->shouldReceive('validateCredentials')
-                       ->once()
-                       ->with($user, $credentials)
-                       ->andReturn(false);
+            ->once()
+            ->with($user, $credentials)
+            ->andReturn(false);
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Attempting::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Failed::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Authenticated::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Login::class));
 
         $this->assertFalse($this->guard->attempt($credentials));
     }
 
     /** @test */
-    public function it_should_magically_call_the_jwt_instance()
+    public function itShouldMagicallyCallTheJwtInstance()
     {
         $this->jwt->shouldReceive('factory')->andReturn(Mockery::mock(Factory::class));
         $this->assertInstanceOf(Factory::class, $this->guard->factory());
     }
 
     /** @test */
-    public function it_should_logout_the_user_by_invalidating_the_token()
+    public function itShouldLogoutTheUserByInvalidatingTheToken()
     {
         $this->jwt->shouldReceive('setRequest')->andReturn($this->jwt);
         $this->jwt->shouldReceive('getToken')->once()->andReturn(true);
         $this->jwt->shouldReceive('invalidate')->once()->andReturn(true);
         $this->jwt->shouldReceive('unsetToken')->once();
 
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Authenticated::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Logout::class));
+
         $this->guard->logout();
         $this->assertNull($this->guard->getUser());
     }
 
     /** @test */
-    public function it_should_refresh_the_token()
+    public function itShouldRefreshTheToken()
     {
         $this->jwt->shouldReceive('setRequest')->andReturn($this->jwt);
         $this->jwt->shouldReceive('getToken')->once()->andReturn(true);
@@ -279,7 +346,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_invalidate_the_token()
+    public function itShouldInvalidateTheToken()
     {
         $this->jwt->shouldReceive('setRequest')->andReturn($this->jwt);
         $this->jwt->shouldReceive('getToken')->once()->andReturn(true);
@@ -289,7 +356,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_throw_an_exception_if_there_is_no_token_present_when_required()
+    public function itShouldThrowAnExceptionIfThereIsNoTokenPresentWhenRequired()
     {
         $this->expectException(JWTException::class);
         $this->expectExceptionMessage('Token could not be parsed from the request.');
@@ -302,112 +369,158 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_generate_a_token_by_id()
+    public function itShouldGenerateATokenById()
     {
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->provider->shouldReceive('retrieveById')
-                       ->once()
-                       ->with(1)
-                       ->andReturn($user);
+            ->once()
+            ->with(1)
+            ->andReturn($user);
 
         $this->jwt->shouldReceive('fromUser')
-                  ->once()
-                  ->with($user)
-                  ->andReturn('foo.bar.baz');
+            ->once()
+            ->with($user)
+            ->andReturn('foo.bar.baz');
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Authenticated::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Login::class));
 
         $this->assertSame('foo.bar.baz', $this->guard->tokenById(1));
     }
 
     /** @test */
-    public function it_should_not_generate_a_token_by_id()
+    public function itShouldNotGenerateATokenById()
     {
         $this->provider->shouldReceive('retrieveById')
-                       ->once()
-                       ->with(1)
-                       ->andReturn(null);
+            ->once()
+            ->with(1)
+            ->andReturn(null);
 
         $this->assertNull($this->guard->tokenById(1));
     }
 
     /** @test */
-    public function it_should_authenticate_the_user_by_credentials_and_return_true_if_valid()
+    public function itShouldAuthenticateTheUserByCredentialsAndReturnTrueIfValid()
     {
         $credentials = ['foo' => 'bar', 'baz' => 'bob'];
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->provider->shouldReceive('retrieveByCredentials')
-                       ->once()
-                       ->with($credentials)
-                       ->andReturn($user);
+            ->once()
+            ->with($credentials)
+            ->andReturn($user);
 
         $this->provider->shouldReceive('validateCredentials')
-                       ->once()
-                       ->with($user, $credentials)
-                       ->andReturn(true);
+            ->once()
+            ->with($user, $credentials)
+            ->andReturn(true);
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Attempting::class));
+
+        if (class_exists('Illuminate\Auth\Events\Validated')) {
+            $this->eventDispatcher->shouldReceive('dispatch')
+                ->once()
+                ->with(Mockery::type('Illuminate\Auth\Events\Validated'));
+        }
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Authenticated::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->never()
+            ->with(Mockery::type(Login::class));
 
         $this->assertTrue($this->guard->once($credentials));
     }
 
     /** @test */
-    public function it_should_attempt_to_authenticate_the_user_by_credentials_and_return_false_if_invalid()
+    public function itShouldAttemptToAuthenticateTheUserByCredentialsAndReturnFalseIfInvalid()
     {
         $credentials = ['foo' => 'bar', 'baz' => 'bob'];
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->provider->shouldReceive('retrieveByCredentials')
-                       ->once()
-                       ->with($credentials)
-                       ->andReturn($user);
+            ->once()
+            ->with($credentials)
+            ->andReturn($user);
 
         $this->provider->shouldReceive('validateCredentials')
-                       ->once()
-                       ->with($user, $credentials)
-                       ->andReturn(false);
+            ->once()
+            ->with($user, $credentials)
+            ->andReturn(false);
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Attempting::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Failed::class));
 
         $this->assertFalse($this->guard->once($credentials));
     }
 
     /** @test */
-    public function it_should_authenticate_the_user_by_id_and_return_boolean()
+    public function itShouldAuthenticateTheUserByIdAndReturnBoolean()
     {
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->provider->shouldReceive('retrieveById')
-                       ->twice()
-                       ->with(1)
-                       ->andReturn($user);
+            ->twice()
+            ->with(1)
+            ->andReturn($user);
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->twice()
+            ->with(Mockery::type(Authenticated::class));
 
         $this->assertTrue($this->guard->onceUsingId(1)); // once
         $this->assertTrue($this->guard->byId(1)); // twice
     }
 
     /** @test */
-    public function it_should_not_authenticate_the_user_by_id_and_return_false()
+    public function itShouldNotAuthenticateTheUserByIdAndReturnFalse()
     {
         $this->provider->shouldReceive('retrieveById')
-                       ->twice()
-                       ->with(1)
-                       ->andReturn(null);
+            ->twice()
+            ->with(1)
+            ->andReturn(null);
 
         $this->assertFalse($this->guard->onceUsingId(1)); // once
         $this->assertFalse($this->guard->byId(1)); // twice
     }
 
     /** @test */
-    public function it_should_create_a_token_from_a_user_object()
+    public function itShouldCreateATokenFromAUserObject()
     {
-        $user = new LaravelUserStub;
+        $user = new LaravelUserStub();
 
         $this->jwt->shouldReceive('fromUser')
-                  ->once()
-                  ->with($user)
-                  ->andReturn('foo.bar.baz');
+            ->once()
+            ->with($user)
+            ->andReturn('foo.bar.baz');
 
         $this->jwt->shouldReceive('setToken')
-                  ->once()
-                  ->with('foo.bar.baz')
-                  ->andReturnSelf();
+            ->once()
+            ->with('foo.bar.baz')
+            ->andReturnSelf();
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Authenticated::class));
+
+        $this->eventDispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::type(Login::class));
 
         $token = $this->guard->login($user);
 
@@ -415,7 +528,7 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_get_the_payload()
+    public function itShouldGetThePayload()
     {
         $this->jwt->shouldReceive('setRequest')->andReturn($this->jwt);
         $this->jwt->shouldReceive('getToken')->once()->andReturn('foo.bar.baz');
@@ -424,11 +537,9 @@ class JWTGuardTest extends AbstractTestCase
     }
 
     /** @test */
-    public function it_should_be_macroable()
+    public function itShouldBeMacroable()
     {
-        $this->guard->macro('foo', function () {
-            return 'bar';
-        });
+        $this->guard->macro('foo', fn () => 'bar');
 
         $this->assertEquals('bar', $this->guard->foo());
     }
